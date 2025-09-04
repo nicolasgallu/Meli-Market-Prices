@@ -3,6 +3,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import json
 import os
 from dotenv import load_dotenv
+import datetime
 load_dotenv()
 
 # --- Load environment variables ---
@@ -17,26 +18,36 @@ RESULTS_JSON_PATH = os.path.join(DATABASE_DIR, 'scrap_results.json')
 
 def post_results_to_sheet(json_file=RESULTS_JSON_PATH):
     with open(json_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    results = data.get("results", [])
-    timestamp = data.get("timestamp", [])
+        results = json.load(f)
 
-    header = ["url", "Título", "Precio con Centavos", "Competidor", "Precio en Cuotas", "Imagen","timestamp"]
+    header = ["url", "Title", "Price", "Competitor", "Price in Installments", "Image", "timestamp"]
     rows = [header]
     for item in results:
+        iso_ts = item.get("_timestamp", "")
+        if iso_ts:
+            try:
+                dt = datetime.datetime.fromisoformat(iso_ts.replace("Z", "+00:00"))
+                ts = dt.strftime("%Y-%m-%d %H:%M:%S")
+            except Exception:
+                ts = ""
+        else:
+            ts = ""
         row = [
-            item.get("url", ""),
-            item.get("Título", ""),
-            item.get("Precio con Centavos", ""),
-            item.get("Competidor", ""),
-            item.get("Precio en Cuotas", ""),
-            item.get("Imagen", ""),
-            timestamp
+            item.get("_url", ""),
+            item.get("Title", ""),
+            item.get("Price", ""),
+            item.get("Competitor", ""),
+            item.get("Price in Installments", ""),
+            item.get("Image", ""),
+            ts
         ]
         rows.append(row)
-    
     creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_CREDS, ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"])
     client = gspread.authorize(creds)
     sheet = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
     sheet.clear()
     sheet.update('A1', rows)
+
+
+
+
