@@ -32,10 +32,16 @@ def post_results_to_sheet(json_file=RESULTS_JSON_PATH):
                 ts = ""
         else:
             ts = ""
+        # Format price as integer: remove dots and commas
+        price_raw = item.get("Price", "")
+        if price_raw:
+            price = price_raw.replace('.', '').replace(',', '').strip()
+        else:
+            price = ""
         row = [
             item.get("_url", ""),
             item.get("Title", ""),
-            item.get("Price", ""),
+            price,
             item.get("Competitor", ""),
             item.get("Price in Installments", ""),
             item.get("Image", ""),
