@@ -13,7 +13,7 @@ WORKSHEET_NAME = "Scrapping"
 
 # --- Set up paths ---
 DATABASE_DIR = os.path.join(os.path.dirname(__file__), '../database')
-RESULTS_JSON_PATH = os.path.join(DATABASE_DIR, 'scrap_results.json')
+RESULTS_JSON_PATH = os.path.join(DATABASE_DIR, 'merged_results.json')
 
 
 def post_results_to_sheet(json_file=RESULTS_JSON_PATH):
@@ -39,7 +39,7 @@ def post_results_to_sheet(json_file=RESULTS_JSON_PATH):
         else:
             price = ""
         row = [
-            item.get("_url", ""),
+            item.get("url", ""),
             item.get("Title", ""),
             price,
             item.get("Competitor", ""),

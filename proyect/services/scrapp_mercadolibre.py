@@ -1,7 +1,7 @@
+from scrapfly import ScrapflyClient, ScrapeConfig, ScrapflyScrapeError
 import os, json, time, uuid, random, asyncio
 from datetime import datetime
 from bs4 import BeautifulSoup
-from scrapfly import ScrapflyClient, ScrapeConfig, ScrapflyScrapeError
 from dotenv import load_dotenv
 import logging
 
@@ -10,7 +10,7 @@ URLS_PER_SESSION       = 18
 MAX_PARALLEL_SESSIONS  = 5
 BASE_TIMEOUT_MS        = 90000
 HEAVY_TIMEOUT_MS       = 120000
-DEEP_TIMEOUT_MS        = 180000
+DEEP_TIMEOUT_MS        = 150000
 BASE_COST_BUDGET       = 30
 HEAVY_COST_BUDGET      = 45
 DEEP_COST_BUDGET       = 60
