@@ -283,7 +283,9 @@ def write_json(obj, path):
 # ---------- ENTRY POINT ----------
 def run_scrapping():
     if not SCRAPFLY_API_KEY:
-        raise RuntimeError("SCRAPFLY_API_KEY is missing. Add it to your .env or environment.")
+        raise RuntimeError("Scarpfly API key is missing.")
+    if not URLS_JSON_PATH:
+        raise RuntimeError("Urls files is missing.")
 
     with open(URLS_JSON_PATH, "r", encoding="utf-8") as f:
         urls = json.load(f)["urls"]
@@ -291,7 +293,7 @@ def run_scrapping():
     global TOTAL
     TOTAL = len(urls)
     indexed = list(enumerate(urls, start=1))
-    logger.info(f"Starting scrape of {TOTAL} URLs (progress-only logs; URLs hidden)...")
+    logger.info(f"Starting scrape of {TOTAL} URLs.")
 
     # Pass 1: async sessions
     rows = asyncio.run(run_all(indexed))
