@@ -1,15 +1,17 @@
 from google.cloud import secretmanager
+from dotenv import load_dotenv
 import json
 import os
-from dotenv import load_dotenv
 
 
 def load_service_account():
     load_dotenv()
     # Your secret name in GCP
     secret_id = "nicogallu-account-service"  # <-- replace with the name you gave
-    project_id = os.getenv("GCP_PROJECT")  # auto-set in Cloud Functions
-    
+    try:
+        project_id = os.getenv("GCP_PROJECT")  # auto-set in Cloud Functions
+    except KeyError:
+        return "Set the GCP_PROJECT env var!"
     # Build the resource name of the secret
     name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
     
