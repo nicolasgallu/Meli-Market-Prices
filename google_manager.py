@@ -1,24 +1,21 @@
 from google.cloud import secretmanager
-from dotenv import load_dotenv
 import json
 import os
 
-
 def load_service_account():
-    load_dotenv()
-    # Your secret name in GCP
-    secret_id = "nicogallu-account-service"  # <-- replace with the name you gave
-    try:
-        project_id = os.getenv("GCP_PROJECT")  # auto-set in Cloud Functions
-    except KeyError:
-        return "Set the GCP_PROJECT env var!"
-    # Build the resource name of the secret
+    # Cloud Functions sets GOOGLE_CLOUD_PROJECT automatically
+    project_id = os.environ["GOOGLE_CLOUD_PROJECT"]
+    secret_id = "nicogallu-account-service"  # must match the secret name in Secret Manager
+    
     name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
     
-    # Access Secret Manager
     client = secretmanager.SecretManagerServiceClient()
     response = client.access_secret_version(name=name)
     
-    # Decode secret payload
     payload = response.payload.data.decode("UTF-8")
-    return json.loads(payload)  # this is your credentials dict
+    
+    # Return JSON if possible, otherwise raw string
+    try:
+        return json.loads(payload)
+    except json.JSONDecodeError:
+        return payload
