@@ -15,6 +15,8 @@ def load_service_account():
     payload = response.payload.data.decode("UTF-8")
 
     try:
+        print("Decoding JSON payload")
         return json.loads(payload)
     except json.JSONDecodeError:
+        print("failed to decode JSON, returning raw payload")
         return payload
