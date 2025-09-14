@@ -8,15 +8,13 @@ from google_manager import load_service_account
 
 def scrape(request):
     """Entrypoint for Google Cloud Functions"""
-    load_service_account()
-    return "Good Nicolas..."
-    # If you need env vars, you’ll set them in GCP and read them with os.getenv()
-    # Example: API_KEY = os.getenv("MY_API_KEY")
-    #get_urls_from_sheet()
-    #run_scrapping()
-    #run_scrapp_failed()
-    #cleaning()
-    #post_results_to_sheet()
-    #clean_all_jsons()
-    #return "Scraping done!"
+    serive_account = load_service_account()
+
+    get_urls_from_sheet(serive_account)
+    run_scrapping()
+    run_scrapp_failed()
+    cleaning()
+    post_results_to_sheet(serive_account)
+    clean_all_jsons()
+    return "Scraping done!"
 

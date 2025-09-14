@@ -1,13 +1,9 @@
 from oauth2client.service_account import ServiceAccountCredentials
-from dotenv import load_dotenv
 import gspread
 import json
 import os
 
-# --- Load environment variables ---
-load_dotenv()
-GOOGLE_CREDS = "credenciales.json"
-SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
+SPREADSHEET_ID = "1wYYkvwUcjdy63SbJmIwh2ixdfQXHkimMmp2uAgb8III"
 WORKSHEET_NAME = "urls"
 COLUMN = "A"
 
@@ -15,8 +11,8 @@ COLUMN = "A"
 DATABASE_DIR = os.path.join(os.path.dirname(__file__), '../database')
 URLS_JSON_PATH = os.path.join(DATABASE_DIR, 'urls.json')
 
-def get_urls_from_sheet():
-    creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_CREDS, ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"])
+def get_urls_from_sheet(serive_account=None):
+    creds = ServiceAccountCredentials.from_json_keyfile_name(serive_account, ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"])
     client = gspread.authorize(creds)
     sheet = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
     urls = sheet.col_values(1)
