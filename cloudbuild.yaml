@@ -1,0 +1,14 @@
+steps:
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      [
+        'functions', 'deploy', 'scrape-function',
+        '--gen2',
+        '--region=us-central1',
+        '--runtime=python310',
+        '--source=.',
+        '--entry-point=scrape',
+        '--trigger-http',
+        '--allow-unauthenticated'
+      ]
