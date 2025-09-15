@@ -11,7 +11,7 @@ load_dotenv()
 spreadsheet_id = os.getenv("SPREADSHEET_ID")
 scopes = os.getenv("SCOPES").split(",")
 
-if __name__ == "__main__":
+def main():
     """Entrypoint for Google Cloud Functions"""
     serive_account = load_service_account()
     get_urls_from_sheet(serive_account, scopes, spreadsheet_id)
@@ -19,3 +19,5 @@ if __name__ == "__main__":
     run_scrapp_failed()
     cleaning()
     post_results_to_sheet(serive_account, scopes, spreadsheet_id)
+
+main()
