@@ -62,6 +62,7 @@ def post_results_to_sheet(serive_account=None, scopes=None, spreadsheet_id=None)
     sheet.clear()
     sheet.update('A1', rows)
     logger.info("finished posting results to Google Sheet.")
+    logger.info("TEST TEST TEST")
 
 
 
