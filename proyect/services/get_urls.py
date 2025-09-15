@@ -12,7 +12,7 @@ DATABASE_DIR = os.path.join(os.path.dirname(__file__), '../database')
 URLS_JSON_PATH = os.path.join(DATABASE_DIR, 'urls.json')
 
 def get_urls_from_sheet(serive_account=None):
-    creds = ServiceAccountCredentials.from_json_keyfile_name(serive_account, ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"])
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(serive_account, ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"])
     client = gspread.authorize(creds)
     sheet = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
     urls = sheet.col_values(1)

@@ -45,7 +45,7 @@ def post_results_to_sheet(serive_account=None, json_file=RESULTS_JSON_PATH):
             ts
         ]
         rows.append(row)
-    creds = ServiceAccountCredentials.from_json_keyfile_name(serive_account, ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"])
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(serive_account, ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"])
     client = gspread.authorize(creds)
     sheet = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
     sheet.clear()
