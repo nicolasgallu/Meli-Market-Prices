@@ -1,9 +1,11 @@
-import google.auth
 from google.cloud import secretmanager
+from proyect.utils.logger import logger
+import google.auth
 import json
 
 def load_service_account():
-    # Get project ID dynamically
+    """Load service account credentials from Google Secret Manager."""
+
     _, project_id = google.auth.default()
 
     secret_id = "nicogallu-account-service"
@@ -15,6 +17,8 @@ def load_service_account():
     payload = response.payload.data.decode("UTF-8")
 
     try:
+        logger.info("Loading service account credentials...")
         return json.loads(payload)
     except json.JSONDecodeError:
+        logger.error("Error decoding JSON from secret payload")
         return payload

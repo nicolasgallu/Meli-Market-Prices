@@ -1,24 +1,35 @@
-import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from proyect.utils.logger import logger
+import datetime
+import gspread
 import json
 import os
-import datetime
 
-# --- Load environment variables ---
-SPREADSHEET_ID = "1wYYkvwUcjdy63SbJmIwh2ixdfQXHkimMmp2uAgb8III"
-WORKSHEET_NAME = "Scrapping"
-
-# --- Set up paths ---
+# --- PATHS ---
 DATABASE_DIR = os.path.join(os.path.dirname(__file__), '../database')
 RESULTS_JSON_PATH = os.path.join(DATABASE_DIR, 'merged_results.json')
 
-
-def post_results_to_sheet(serive_account=None, json_file=RESULTS_JSON_PATH):
-    with open(json_file, "r", encoding="utf-8") as f:
+def post_results_to_sheet(serive_account=None, scopes=None, spreadsheet_id=None):
+    """Post scraping results from a JSON file to a Google Sheet.
+    Args:
+        serive_account (dict): Service account credentials for Google Sheets API.
+        spreadsheet_id (str): The ID of the Google Sheet to post results to.
+    """
+    
+    with open(RESULTS_JSON_PATH, "r", encoding="utf-8") as f:
         results = json.load(f)
 
-    header = ["url", "Title", "Price", "Competitor", "Price in Installments", "Image", "timestamp"]
+    header = [
+        "url", 
+        "Title", 
+        "Price", 
+        "Competitor", 
+        "Price in Installments", 
+        "Image", 
+        "timestamp"
+    ]
     rows = [header]
+    logger.info("Posting results to Google Sheet...")
     for item in results:
         iso_ts = item.get("_timestamp", "")
         if iso_ts:
@@ -45,11 +56,12 @@ def post_results_to_sheet(serive_account=None, json_file=RESULTS_JSON_PATH):
             ts
         ]
         rows.append(row)
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(serive_account, ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"])
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(serive_account, scopes)
     client = gspread.authorize(creds)
-    sheet = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
+    sheet = client.open_by_key(spreadsheet_id).worksheet("Scrapping")
     sheet.clear()
     sheet.update('A1', rows)
+    logger.info("finished posting results to Google Sheet.")
 
 
 

@@ -1,9 +1,9 @@
 from scrapfly import ScrapflyClient, ScrapeConfig, ScrapflyScrapeError
 import os, json, time, uuid, random, asyncio
+from proyect.utils.logger import logger
 from datetime import datetime
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-import logging
 
 # ---------- SETTINGS ----------
 URLS_PER_SESSION       = 18
@@ -15,14 +15,6 @@ BASE_COST_BUDGET       = 30
 HEAVY_COST_BUDGET      = 45
 DEEP_COST_BUDGET       = 60
 THINK_TIME_RANGE       = (0.9, 2.3)
-
-# ---------- LOGGING ----------
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-logger = logging.getLogger(__name__)
 
 # ---------- ENV / PATHS ----------
 load_dotenv()
@@ -106,7 +98,7 @@ def scrape_once(idx, url, display_session, session_id, client, attempt=1, overri
         parsed["_session"] = display_session
         parsed["_attempt"] = attempt
         parsed["_api_cost"] = api_cost
-        parsed["_timestamp"] = datetime.utcnow().isoformat() + "Z"
+        parsed["_timestamp"] = datetime.now().isoformat() + "Z"
 
         # Soft retry if looks incomplete/shielded
         if overrides is None:  # only in normal path; deep-rescue manages its own flow
@@ -138,7 +130,7 @@ def scrape_once(idx, url, display_session, session_id, client, attempt=1, overri
         logger.error(f"[{display_session}] HARD FAIL {idx}/{TOTAL} after {attempt} attempts")
         return {
             "_url": url, "_index": idx, "_session": display_session, "_attempt": attempt,
-            "_timestamp": datetime.utcnow().isoformat() + "Z", "Title": "ERROR",
+            "_timestamp": datetime.now().isoformat() + "Z", "Title": "ERROR",
             "Price": "", "Competitor": "", "Price in Installments": "", "Image": "",
             "_error": f"{code or type(e).__name__}"
         }
@@ -149,7 +141,7 @@ def scrape_once(idx, url, display_session, session_id, client, attempt=1, overri
         logger.error(f"[{display_session}] UNEXPECTED {idx}/{TOTAL}: {type(e).__name__}")
         return {
             "_url": url, "_index": idx, "_session": display_session, "_attempt": attempt,
-            "_timestamp": datetime.utcnow().isoformat() + "Z", "Title": "ERROR",
+            "_timestamp": datetime.now().isoformat() + "Z", "Title": "ERROR",
             "Price": "", "Competitor": "", "Price in Installments": "", "Image": "",
             "_error": f"UNEXPECTED {type(e).__name__}"
         }

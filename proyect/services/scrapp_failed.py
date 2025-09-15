@@ -1,10 +1,7 @@
-#!/usr/bin/env python3
-# scrap_failed_urls.py
-# Minimal retry, simple flow, Scrapfly only.
-
 from scrapfly import ScrapflyClient, ScrapeConfig, ScrapflyScrapeError
-from bs4 import BeautifulSoup
+from proyect.utils.logger import logger
 from datetime import datetime, timezone
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import os, json, uuid, time
 
@@ -18,7 +15,6 @@ load_dotenv()
 SCRAPFLY_API_KEY = os.getenv("SCRAPFLY_API_KEY")
 
 # ---------- SCRAPFLY DEFAULTS (SIMPLE) ----------
-# Keep it within ASP limits: 30_000–150_000 ms
 TIMEOUT_MS = 120_000
 BASE_CFG = dict(
     asp=True,
@@ -35,22 +31,16 @@ BASE_CFG = dict(
 def parse_product(html: str):
     soup = BeautifulSoup(html, "html.parser")
     data = {}
-
     t = soup.find("h1", class_="ui-pdp-title")
     data["Title"] = t.text.strip() if t else "Title not found"
-
     p = soup.find("span", class_="andes-money-amount__fraction")
     data["Price"] = p.text.strip() if p else ""
-
     c = soup.find("h2", class_="ui-seller-data-header__title")
     data["Competitor"] = c.text.strip() if c else "Competitor not found"
-
     q = soup.find("div", class_="ui-pdp-price__subtitles")
     data["Price in Installments"] = q.text.strip() if q else "Installments not found"
-
     img = soup.find("img", class_="ui-pdp-image")
     data["Image"] = img["src"] if (img and img.get("src")) else "Image not found"
-
     return data
 
 # ---------- IO HELPERS ----------
@@ -59,7 +49,7 @@ def read_failed():
         return []
     with open(FAILED_JSON_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
-    # expected shape: [{"index": <int>, "url": "<url>"}]
+
     rows = []
     for row in data:
         idx = row.get("index")
@@ -155,7 +145,7 @@ def run_scrapp_failed():
 
     failed = read_failed()
     if not failed:
-        print("No failed URLs found – nothing to do.")
+        logger.info("No failed URLs found - nothing to do.")
         write_results([])
         return
 
@@ -163,7 +153,7 @@ def run_scrapp_failed():
     session_id = f"FAILED-{uuid.uuid4()}"  # one sticky session for the whole run
     results = []
 
-    print(f"Retrying {len(failed)} failed URLs (simple mode)...")
+    logger.warning(f"Retrying {len(failed)} failed URLs (simple mode)...")
     for idx, url in failed:
         out = scrape_url(client, session_id, idx, url)
         results.append(out)
@@ -175,4 +165,3 @@ def run_scrapp_failed():
     write_results(results)
     # final summary
     oks = sum(1 for r in results if r.get("status") == "OK")
-    print(f"Done. OK: {oks} / {len(results)}")
