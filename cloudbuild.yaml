@@ -1,14 +1,11 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
-      [
-        'build',
-        '-t', 'gcr.io/$PROJECT_ID/github.com/nicolasgallu/meli-market-prices:latest',
-        '-t', 'gcr.io/$PROJECT_ID/github.com/nicolasgallu/meli-market-prices:$COMMIT_SHA',
-        '-f', 'Dockerfile',
-        '.'
-      ]
-
-images:
-  - 'gcr.io/$PROJECT_ID/github.com/nicolasgallu/meli-market-prices:latest'
-  - 'gcr.io/$PROJECT_ID/github.com/nicolasgallu/meli-market-prices:$COMMIT_SHA'
+      ['build', '-t', 'gcr.io/nicoservertest/github.com/nicolasgallu/meli-market-prices:$COMMIT_SHA',
+       '-t', 'gcr.io/nicoservertest/github.com/nicolasgallu/meli-market-prices:latest', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      ['push', 'gcr.io/nicoservertest/github.com/nicolasgallu/meli-market-prices:$COMMIT_SHA']
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      ['push', 'gcr.io/nicoservertest/github.com/nicolasgallu/meli-market-prices:latest']
