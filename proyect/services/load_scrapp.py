@@ -9,7 +9,7 @@ import os
 DATABASE_DIR = os.path.join(os.path.dirname(__file__), '../database')
 RESULTS_JSON_PATH = os.path.join(DATABASE_DIR, 'merged_results.json')
 
-def post_results_to_sheet(serive_account=None, scopes=None, spreadsheet_id=None):
+def post_results_to_sheet(serive_account=None, scopes=None, spreadsheet_id=None, remain=0):
     """Post scraping results from a JSON file to a Google Sheet.
     Args:
         serive_account (dict): Service account credentials for Google Sheets API.
@@ -20,40 +20,37 @@ def post_results_to_sheet(serive_account=None, scopes=None, spreadsheet_id=None)
         results = json.load(f)
 
     header = [
-        "url", 
-        "Title", 
-        "Price", 
-        "Competitor", 
-        "Price in Installments", 
-        "Image", 
-        "timestamp"
+        "url",
+        "title",
+        "price",
+        "competitor",
+        "price_in_installments",
+        "image",
+        "timestamp",
+        "status",
+        "api_cost_total",
+        "remaining_credits"
     ]
     rows = [header]
     logger.info("Posting results to Google Sheet...")
     for item in results:
-        iso_ts = item.get("_timestamp", "")
-        if iso_ts:
-            try:
-                dt = datetime.datetime.fromisoformat(iso_ts.replace("Z", "+00:00"))
-                ts = dt.strftime("%Y-%m-%d %H:%M:%S")
-            except Exception:
-                ts = ""
-        else:
-            ts = ""
         # Format price as integer: remove dots and commas
-        price_raw = item.get("Price", "")
+        price_raw = item.get("price", "")
         if price_raw:
             price = price_raw.replace('.', '').replace(',', '').strip()
         else:
             price = ""
         row = [
-            item.get("url", ""),
-            item.get("Title", ""),
+            item.get("_url", ""),
+            item.get("title", ""),
             price,
-            item.get("Competitor", ""),
-            item.get("Price in Installments", ""),
-            item.get("Image", ""),
-            ts
+            item.get("competitor", ""),
+            item.get("price_in_installments", ""),
+            item.get("image", ""),
+            item.get("_timestamp", ""),
+            item.get("_status", ""),
+            item.get("_api_cost_total", ""),
+            remain
         ]
         rows.append(row)
     creds = ServiceAccountCredentials.from_json_keyfile_dict(serive_account, scopes)
@@ -62,7 +59,6 @@ def post_results_to_sheet(serive_account=None, scopes=None, spreadsheet_id=None)
     sheet.clear()
     sheet.update('A1', rows)
     logger.info("finished posting results to Google Sheet.")
-    logger.info("TEST TEST TEST")
 
 
 
