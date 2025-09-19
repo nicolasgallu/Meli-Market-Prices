@@ -16,13 +16,14 @@ api_key = os.getenv("SCRAPFLY_API_KEY")
 
 def main():
     """Entrypoint for Google Cloud Functions"""
-    serive_account = load_service_account()
-    get_urls_from_sheet(serive_account, scopes, spreadsheet_id)
+    #serive_account = load_service_account()
+    #get_urls_from_sheet(serive_account, scopes, spreadsheet_id)
     scrap_meli_urls(api_key)
-    scrap_urls_failed(api_key)
-    merge_scraping()
+    #scrap_urls_failed(api_key)
+    #merge_scraping()
     remain = remain_budget(api_key)
-    post_results_to_sheet(serive_account, scopes, spreadsheet_id, remain)
-    remove_data()
+    print(remain)
+    #post_results_to_sheet(serive_account, scopes, spreadsheet_id, remain)
+    #remove_data()
 
 main()
