@@ -1,6 +1,6 @@
 asttokens==3.0.0
 attrs==25.3.0
-Automat==23.2.0
+Automat==22.10.0
 backoff==2.2.1
 beautifulsoup4==4.13.5
 blinker==1.9.0
