@@ -34,8 +34,9 @@ def parse_product(html):
     data = {}
     t = soup.find("h1", class_="ui-pdp-title")
     data["Title"] = t.text.strip() if t else "Title not found"
-    p = soup.find("span", class_="andes-money-amount__fraction")
-    data["Price"] = p.text.strip() if p else ""
+    precio_container = soup.find("div", {"class": "ui-pdp-price__second-line"})
+    precio_span = precio_container.find("span", {"class": "andes-money-amount__fraction"}) if precio_container else None
+    data["Price"] = precio_span.text.strip() if precio_span else ""
     c = soup.find("h2", class_="ui-seller-data-header__title")
     data["Competitor"] = c.text.strip() if c else "Competitor not found"
     q = soup.find("div", class_="ui-pdp-price__subtitles")
