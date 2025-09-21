@@ -1,6 +1,6 @@
 from scrapfly import ScrapflyClient, ScrapeConfig
 from proyect.utils.logger import logger
-import os, json, asyncio
+import os, json, asyncio, uuid, random
 from datetime import datetime
 from bs4 import BeautifulSoup
 
@@ -44,6 +44,9 @@ async def scrape_one(client, url, discard_phrase):
     Scrape one URL and return a tuple describing the result.
     """
     try:
+        # create a unique session ID per scrape
+        session_id = str(uuid.uuid4())
+
         # 1. Build request config
         cfg = ScrapeConfig(
             url=url,
@@ -56,6 +59,8 @@ async def scrape_one(client, url, discard_phrase):
             retry=False,
             timeout=90_000,
             cost_budget=30,
+            session=session_id,
+            session_sticky_proxy=True,
         )
 
         # 2. Execute scrapping
@@ -80,7 +85,6 @@ async def scrape_one(client, url, discard_phrase):
             logger.warning(f"Discarded (not available)..")
             return parsed
 
-
         # 4. Extract fields & Parsing
         t = soup.find("h1", class_="ui-pdp-title")
         precio_container = soup.find("div", {"class": "ui-pdp-price__second-line"})
@@ -101,7 +105,7 @@ async def scrape_one(client, url, discard_phrase):
         }
 
         # 5. Validate if Failed
-        if parsed["Title"] == "n/a":
+        if parsed["title"] == "n/a":
             parsed["_status"] = "failed"
             logger.error(f"Failed to parse title.")
             return parsed
@@ -112,7 +116,17 @@ async def scrape_one(client, url, discard_phrase):
     
     except Exception:
         logger.error(f"Exception while scraping..")
-        parsed["_status"] = "failed"
+        parsed = {
+            "title": "n/a",
+            "price": "",
+            "competitor": "n/a",
+            "price_in_installments": "n/a",
+            "image": "n/a",
+            "_url": url,
+            "_timestamp": now_ts(),
+            "_status": "failed",
+            "_api_cost": "n/a",
+        }
         return parsed
 
 async def scrape_all(urls, api_key):
@@ -136,6 +150,9 @@ async def scrape_all(urls, api_key):
             async with lock:
                 counter[0] += 1
                 logger.info(f"[{counter[0]}/{total}] finished..")
+            # add think-time delay
+            await asyncio.sleep(random.uniform(1.5, 3.5))
+
     await asyncio.gather(*(job(u) for u in urls))
     return results
 
