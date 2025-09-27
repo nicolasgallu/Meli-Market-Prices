@@ -51,8 +51,7 @@ def merge_scraping():
         logger.info("No data to process.")
         return
 
-    # 3. Ensure timestamp is datetime and sort
-    df_all["_timestamp"] = pd.to_datetime(df_all["_timestamp"], errors="coerce")
+    # 3.Sort Values by scrapped timestamp
     df_all = df_all.sort_values("_timestamp")
 
     # 4. Safe cast _api_cost to numeric

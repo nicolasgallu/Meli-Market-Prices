@@ -7,40 +7,20 @@ It focuses not only on the happy path but also on how failures are detected, ret
 
 ## High-Level Flow
 
-1. **Load URLs**
-   - Read all target Mercado Libre URLs from `urls.json`.
-   - Assign a numeric index to each URL for progress tracking.
+1. **Load Service Account**
+   - We load the S.A from the context where we run the Repo in GCR.
 
-2. **Async Multi-Session Scraping**
-   - Split URLs into small **sessions** (e.g. 18 per session).
-   - Run several sessions **in parallel** (e.g. 5).
-   - Each session scrapes its URLs sequentially with small delays, simulating a real person.
+2. **Get Urls**
 
-3. **Error Handling and Retries**
-   - For each URL, try up to 3 attempts:
-     - Attempt 1: fast, normal config.
-     - Attempt 2: add waits & scrolling.
-     - Attempt 3 (or heavy): longer waits, bigger timeout, higher cost budget.
-   - Retries are triggered by:
-     - `"Title not found"`
-     - Block page detection (phrases like "captcha", "actividad inusual")
-     - Scrapfly transient errors (`TIMEOUT`, `ASP`, `PROXY`, …)
 
-4. **Rescue Pass**
-   - After the first async pass, identify failed URLs.
-   - Scrape them again sequentially, with **heaviest config**.
-   - One fresh session per URL.
-   - Adds 1 second pause between retries.
+3. **Scrapping**
 
-5. **Merge Results**
-   - Combine first pass and rescue pass.
-   - Prefer successful results over failed ones.
-   - Preserve original order of URLs.
+4. **Merging**
 
-6. **Save Output**
-   - Write final structured data into `scrap_results.json`.
+4. **Posting**
 
----
+4. **Cleaning**
+
 
 ## Flow Example
 
