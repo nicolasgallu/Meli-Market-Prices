@@ -1,6 +1,13 @@
 # Use the official Python 3.10 runtime as a parent image
 FROM python:3.10-slim
 
+# tzdata for timzone
+RUN apt-get update -y
+RUN apt-get install -y tzdata
+ 
+# timezone env with default
+ENV TZ=America/Argentina/Buenos_Aires
+
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 
