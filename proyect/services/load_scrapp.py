@@ -1,24 +1,25 @@
 from oauth2client.service_account import ServiceAccountCredentials
 from proyect.utils.logger import logger
-import datetime
 import gspread
 import json
 import os
+import time
 
 # --- PATHS ---
 DATABASE_DIR = os.path.join(os.path.dirname(__file__), '../database')
 RESULTS_JSON_PATH = os.path.join(DATABASE_DIR, 'merged_results.json')
 
-def post_results_to_sheet(serive_account=None, scopes=None, spreadsheet_id=None, remain=0):
+def post_results_to_sheet(service_account=None, scopes=None, spreadsheet_id=None, remain=0):
     """Post scraping results from a JSON file to a Google Sheet.
-    Args:
-        serive_account (dict): Service account credentials for Google Sheets API.
-        spreadsheet_id (str): The ID of the Google Sheet to post results to.
+    Matches rows by 'url' (column A) instead of overwriting everything.
+    Locks the sheet while posting to avoid concurrent edits.
     """
-    
+
+    # --- Load JSON results ---
     with open(RESULTS_JSON_PATH, "r", encoding="utf-8") as f:
         results = json.load(f)
 
+    # --- Prepare header and rows ---
     header = [
         "url",
         "title",
@@ -31,17 +32,39 @@ def post_results_to_sheet(serive_account=None, scopes=None, spreadsheet_id=None,
         "api_cost_total",
         "remaining_credits"
     ]
-    rows = [header]
-    logger.info("Posting results to Google Sheet...")
+
+    logger.info("Connecting to Google Sheet...")
+
+    # --- Connect to Google Sheets ---
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account, scopes)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key(spreadsheet_id).worksheet("Scrapping")
+
+    # --- LOCK SHEET ---
+    logger.info("Locking sheet for update...")
+    sheet.protected = True  # basic flag for readability
+    sheet.add_protected_range('A:Z', description="Locked during data update", warning_only=False)
+    time.sleep(1)
+
+    # --- Get current data ---
+    existing_data = sheet.get_all_records()
+    existing_urls = [row["url"] for row in existing_data] if existing_data else []
+
+    # --- Prepare updates ---
+    logger.info("Matching existing URLs and preparing updates...")
+
+    # Make sure the header exists (first row)
+    if not existing_data:
+        sheet.insert_row(header, 1)
+        existing_urls = []
+
     for item in results:
-        # Format price as integer: remove dots and commas
+        url = item.get("_url", "")
         price_raw = item.get("price", "")
-        if price_raw:
-            price = price_raw.replace('.', '').replace(',', '').strip()
-        else:
-            price = ""
-        row = [
-            item.get("_url", ""),
+        price = price_raw.replace('.', '').replace(',', '').strip() if price_raw else ""
+
+        new_row = [
+            url,
             item.get("title", ""),
             price,
             item.get("competitor", ""),
@@ -52,14 +75,20 @@ def post_results_to_sheet(serive_account=None, scopes=None, spreadsheet_id=None,
             item.get("_api_cost_total", ""),
             remain
         ]
-        rows.append(row)
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(serive_account, scopes)
-    client = gspread.authorize(creds)
-    sheet = client.open_by_key(spreadsheet_id).worksheet("Scrapping")
-    sheet.clear()
-    sheet.update('A1', rows)
-    logger.info("finished posting results to Google Sheet.")
 
+        if url in existing_urls:
+            # Update the existing row
+            row_index = existing_urls.index(url) + 2  # +2 because list starts at 0 and header is row 1
+            sheet.update(f"A{row_index}:J{row_index}", [new_row])
+        else:
+            # Append new row
+            sheet.append_row(new_row, value_input_option="USER_ENTERED")
+            existing_urls.append(url)
 
+    # --- UNLOCK SHEET ---
+    logger.info("Unlocking sheet...")
+    protections = sheet.list_protected_ranges()
+    for p in protections:
+        sheet.delete_protection(p)
 
-
+    logger.info("Finished posting results to Google Sheet.")
