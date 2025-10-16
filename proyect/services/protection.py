@@ -22,14 +22,13 @@ class SheetProtector:
         self.sheet = self.spreadsheet.worksheet(sheet_name)
 
     def protect(self):
-        """Protect the worksheet so only the owner and service account can edit."""
+        """Protect the worksheet so only the service account and the owner can edit."""
         logger.info(f"Applying protection to the '{self.sheet_name}' sheet...")
 
-        # Get spreadsheet metadata
-        metadata = self.spreadsheet.fetch_sheet_metadata()
-        owner_email = metadata['properties']['ownerEmail']
-
+        # Service account email
         service_account_email = self.service_account['client_email']
+        # Human owner email
+        owner_email = "guiaslocalesar@gmail.com"
 
         body = {
             "requests": [
@@ -39,7 +38,7 @@ class SheetProtector:
                             "range": {"sheetId": self.sheet.id},
                             "description": f"Locking the '{self.sheet_name}' sheet",
                             "warningOnly": False,
-                            "editors": {"users": [owner_email, service_account_email]}
+                            "editors": {"users": [service_account_email, owner_email]}
                         }
                     }
                 }
@@ -48,6 +47,7 @@ class SheetProtector:
 
         self.spreadsheet.batch_update(body)
         logger.info(f"The '{self.sheet_name}' sheet is now protected. Only owner and service account can edit.")
+
 
     def unprotect(self):
         """Remove all protections from the worksheet."""
