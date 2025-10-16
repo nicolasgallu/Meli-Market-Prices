@@ -25,9 +25,10 @@ class SheetProtector:
         """Protect the worksheet so only the owner and service account can edit."""
         logger.info(f"Applying protection to the '{self.sheet_name}' sheet...")
 
-        # Owner of the spreadsheet
-        owner_email = self.spreadsheet.owner['emailAddress']
-        # Service account email
+        # Get spreadsheet metadata
+        metadata = self.spreadsheet.fetch_sheet_metadata()
+        owner_email = metadata['properties']['ownerEmail']
+
         service_account_email = self.service_account['client_email']
 
         body = {
@@ -37,7 +38,7 @@ class SheetProtector:
                         "protectedRange": {
                             "range": {"sheetId": self.sheet.id},
                             "description": f"Locking the '{self.sheet_name}' sheet",
-                            "warningOnly": False,  # fully block edits
+                            "warningOnly": False,
                             "editors": {"users": [owner_email, service_account_email]}
                         }
                     }
