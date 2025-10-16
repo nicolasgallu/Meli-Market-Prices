@@ -22,7 +22,10 @@ class SheetProtector:
         self.sheet = self.spreadsheet.worksheet(sheet_name)
 
     def protect(self):
-        """Protect the worksheet so only the service account and the owner can edit."""
+        """
+        Protect the worksheet so only the service account and the owner can edit.
+        Stores the protection ID to allow direct unprotect later.
+        """
         logger.info(f"Applying protection to the '{self.sheet_name}' sheet...")
 
         # Service account email
@@ -45,20 +48,32 @@ class SheetProtector:
             ]
         }
 
-        self.spreadsheet.batch_update(body)
-        logger.info(f"The '{self.sheet_name}' sheet is now protected. Only owner and service account can edit.")
+        response = self.spreadsheet.batch_update(body)
+
+        # Store the protection ID for future unprotect
+        try:
+            protected_range = response['replies'][0]['addProtectedRange']['protectedRange']
+            self._protected_range_id = protected_range['protectedRangeId']
+            logger.info(f"Protection applied. Stored protectedRangeId: {self._protected_range_id}")
+        except (KeyError, IndexError):
+            logger.warning("Could not retrieve protectedRangeId from response. Unprotect may require metadata fetch.")
 
 
     def unprotect(self):
-        """Remove all protections from the worksheet."""
-        logger.info(f"Fetching protections on the '{self.sheet_name}' sheet...")
-        protections = self.sheet.protected_ranges
+        """
+        Remove protection from the worksheet using the stored protection ID.
+        If the ID is not available, raises an error.
+        """
 
-        if not protections:
-            logger.info("No protections found. Nothing to remove.")
-            return
+        logger.info(f"Removing protection from the '{self.sheet_name}' sheet using stored ID...")
 
-        logger.info(f"Removing {len(protections)} protection(s)...")
-        requests = [{"deleteProtectedRange": {"protectedRangeId": p.id}} for p in protections]
-        self.spreadsheet.batch_update({"requests": requests})
-        logger.info(f"The '{self.sheet_name}' sheet is now unprotected.")
+        body = {
+            "requests": [
+                {"deleteProtectedRange": {"protectedRangeId": self._protected_range_id}}
+            ]
+        }
+
+        self.spreadsheet.batch_update(body)
+        logger.info(f"✅ The '{self.sheet_name}' sheet is now unprotected.")
+        # Clear the stored ID
+        del self._protected_range_id
