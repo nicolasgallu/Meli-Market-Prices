@@ -74,6 +74,5 @@ class SheetProtector:
         }
 
         self.spreadsheet.batch_update(body)
-        logger.info(f"✅ The '{self.sheet_name}' sheet is now unprotected.")
-        # Clear the stored ID
+        logger.info(f"The '{self.sheet_name}' sheet is now unprotected.")
         del self._protected_range_id

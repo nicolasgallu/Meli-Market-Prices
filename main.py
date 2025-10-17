@@ -28,5 +28,4 @@ def main():
     post_results_to_sheet(service_account, scopes, spreadsheet_id, remain)
     remove_data()
     protecion.unprotect()
-
 main()
