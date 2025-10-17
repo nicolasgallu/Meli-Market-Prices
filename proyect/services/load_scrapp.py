@@ -12,25 +12,21 @@ def post_results_to_sheet(service_account=None, scopes=None, spreadsheet_id=None
     """
     Update Google Sheet 'urls' with scraping results based on matching URLs.
 
-    For each URL in column A of the sheet:
-      - If the URL exists in the JSON results, update its info.
-      - If not, fill the row with "n/a" for all other columns.
-
-    Args:
-        service_account (dict): Google service account credentials.
-        scopes (list): Google API scopes.
-        spreadsheet_id (str): Spreadsheet ID.
-        remain (int): Remaining credits to log per row.
+    Behavior:
+      - If the sheet only has the 'url' column, it will create the rest of the headers.
+      - For each URL in column A:
+          * If it exists in the JSON, update its data.
+          * If not, fill cells with "n/a".
     """
     # --- Load JSON results ---
     with open(RESULTS_JSON_PATH, "r", encoding="utf-8") as f:
         results = json.load(f)
 
-    # Build dictionary: url -> data
+    # Build mapping: url -> data
     results_map = {item.get("_url", "").strip(): item for item in results}
 
-    # Columns we’ll fill after URL
-    headers = [
+    # --- Columns after URL ---
+    json_headers = [
         "title",
         "price",
         "competitor",
@@ -47,13 +43,24 @@ def post_results_to_sheet(service_account=None, scopes=None, spreadsheet_id=None
     client = gspread.authorize(creds)
     sheet = client.open_by_key(spreadsheet_id).worksheet("urls")
 
-    logger.info("Fetching URLs from Google Sheet...")
-    urls = sheet.col_values(1)  # Column A
+    # --- Get current headers and URLs ---
+    existing_headers = sheet.row_values(1)
+    urls = sheet.col_values(1)
 
-    # Skip header row if present
-    start_row = 2 if urls and urls[0].lower() == "url" else 1
+    # If sheet is empty or only has "url" column, write full header row
+    if not existing_headers or (len(existing_headers) == 1 and existing_headers[0].lower() == "url"):
+        full_header = ["url"] + json_headers
+        sheet.update("A1", [full_header])
+        existing_headers = full_header
+        logger.info("Header row created or updated.")
 
-    # Prepare update data
+    # Skip header row
+    start_row = 2
+    if not urls:
+        logger.warning("No URLs found in column A. Nothing to update.")
+        return
+
+    # Prepare updated values
     updated_values = []
 
     for i in range(start_row, len(urls) + 1):
@@ -62,10 +69,7 @@ def post_results_to_sheet(service_account=None, scopes=None, spreadsheet_id=None
 
         if item:
             price_raw = item.get("price", "")
-            if price_raw:
-                price = price_raw.replace('.', '').replace(',', '').strip()
-            else:
-                price = ""
+            price = price_raw.replace('.', '').replace(',', '').strip() if price_raw else ""
 
             row_values = [
                 item.get("title", ""),
@@ -80,16 +84,14 @@ def post_results_to_sheet(service_account=None, scopes=None, spreadsheet_id=None
             ]
         else:
             # URL not in JSON → fill with "n/a"
-            row_values = ["n/a"] * (len(headers) - 1) + [remain]  # keep remain numeric if needed
+            row_values = ["n/a"] * (len(json_headers) - 1) + [remain]
 
         updated_values.append(row_values)
 
-    # --- Update sheet in batch ---
+    # --- Update sheet in one batch ---
     logger.info("Updating Google Sheet with matched data...")
-    start_col = 2  # column B
-    end_col = start_col + len(headers) - 1
-
-    # Define the update range dynamically (e.g. B2:J100)
+    start_col = 2  # Column B
+    end_col = start_col + len(json_headers) - 1
     start_cell = gspread.utils.rowcol_to_a1(start_row, start_col)
     end_cell = gspread.utils.rowcol_to_a1(len(urls), end_col)
     update_range = f"{start_cell}:{end_cell}"
