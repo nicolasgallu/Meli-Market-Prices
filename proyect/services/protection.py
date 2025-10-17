@@ -7,11 +7,12 @@ class SheetProtector:
     Class to protect or unprotect a specific worksheet in a Google Sheet.
     """
 
-    def __init__(self, service_account=None, scopes=None, spreadsheet_id=None, sheet_name="urls"):
+    def __init__(self, service_account=None, scopes=None, spreadsheet_id=None, sheet_name=None, owner_email=None):
         self.service_account = service_account
         self.scopes = scopes
         self.spreadsheet_id = spreadsheet_id
         self.sheet_name = sheet_name
+        self.owner_email = owner_email
 
         logger.info("Authorizing service account...")
         creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account, scopes)
@@ -30,8 +31,6 @@ class SheetProtector:
 
         # Service account email
         service_account_email = self.service_account['client_email']
-        # Human owner email
-        owner_email = "guiaslocalesar@gmail.com"
 
         body = {
             "requests": [
@@ -41,7 +40,7 @@ class SheetProtector:
                             "range": {"sheetId": self.sheet.id},
                             "description": f"Locking the '{self.sheet_name}' sheet",
                             "warningOnly": False,
-                            "editors": {"users": [service_account_email, owner_email]}
+                            "editors": {"users": [service_account_email, self.owner_email]}
                         }
                     }
                 }

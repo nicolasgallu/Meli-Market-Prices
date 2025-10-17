@@ -8,7 +8,7 @@ import os
 DATABASE_DIR = os.path.join(os.path.dirname(__file__), '../database')
 URLS_JSON_PATH = os.path.join(DATABASE_DIR, 'urls.json')
 
-def get_urls_from_sheet(serive_account=None, scopes=None, spreadsheet_id=None):
+def get_urls_from_sheet(serive_account=None, scopes=None, spreadsheet_id=None, sheet_name=None):
     """Fetch URLs from a Google Sheet and save them to a JSON file.
     Args:
         serive_account (dict): Service account credentials for Google Sheets API.
@@ -18,7 +18,7 @@ def get_urls_from_sheet(serive_account=None, scopes=None, spreadsheet_id=None):
     logger.info("Fetching URLs from Google Sheet...")
     creds = ServiceAccountCredentials.from_json_keyfile_dict(serive_account, scopes)
     client = gspread.authorize(creds)
-    sheet = client.open_by_key(spreadsheet_id).worksheet("urls")
+    sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name)
     urls = sheet.col_values(1)
     urls = [url for url in urls if url and url.startswith('http')]
 

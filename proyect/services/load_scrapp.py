@@ -9,7 +9,7 @@ DATABASE_DIR = os.path.join(os.path.dirname(__file__), '../database')
 RESULTS_JSON_PATH = os.path.join(DATABASE_DIR, 'merged_results.json')
 
 
-def post_results_to_sheet(service_account=None, scopes=None, spreadsheet_id=None, remain=0):
+def post_results_to_sheet(service_account=None, scopes=None, spreadsheet_id=None, remain=0, sheet_name=None):
     """
     Update the 'urls' sheet with scraping results from JSON.
     Overwrites the header row and fills each row by matching URLs.
@@ -43,7 +43,7 @@ def post_results_to_sheet(service_account=None, scopes=None, spreadsheet_id=None
     # --- Connect to Google Sheets ---
     creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account, scopes)
     client = gspread.authorize(creds)
-    sheet = client.open_by_key(spreadsheet_id).worksheet("urls")
+    sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name)
 
     # --- Always overwrite the header row ---
     logger.info("Writing header row to Google Sheet...")
