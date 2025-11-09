@@ -25,11 +25,10 @@ class SheetProtector:
     def protect(self):
         """
         Protect the worksheet so only the service account and the owner can edit.
-        Stores the protection ID to allow direct unprotect later.
+        If protection already exists, fetch and reuse its ID.
         """
         logger.info(f"Applying protection to the '{self.sheet_name}' sheet...")
 
-        # Service account email
         service_account_email = self.service_account['client_email']
 
         body = {
@@ -40,21 +39,40 @@ class SheetProtector:
                             "range": {"sheetId": self.sheet.id},
                             "description": f"Locking the '{self.sheet_name}' sheet",
                             "warningOnly": False,
-                            "editors": {"users": [service_account_email, self.owner_email]}
+                            "editors": {"users": [service_account_email, self.owner_email]},
                         }
                     }
                 }
             ]
         }
 
-        response = self.spreadsheet.batch_update(body)
-
-        # Store the protection ID for future unprotect
         try:
-            protected_range = response['replies'][0]['addProtectedRange']['protectedRange']
-            self._protected_range_id = protected_range['protectedRangeId']
+            response = self.spreadsheet.batch_update(body)
+            protected_range = response["replies"][0]["addProtectedRange"]["protectedRange"]
+            self._protected_range_id = protected_range["protectedRangeId"]
             logger.info(f"Protection applied. Stored protectedRangeId: {self._protected_range_id}")
-        except (KeyError, IndexError):
+
+        except Exception as e:
+            # Caso: ya está protegido o permiso insuficiente
+            logger.warning(f"Protection may already exist: {e}")
+
+            # Recuperamos los rangos protegidos actuales
+            sheet_metadata = self.spreadsheet.get()
+            protections = sheet_metadata.get("sheets", [])[0].get("protectedRanges", [])
+
+            if protections:
+                # Buscar el primero que coincida con nuestro sheetId
+                for pr in protections:
+                    if pr.get("range", {}).get("sheetId") == self.sheet.id:
+                        self._protected_range_id = pr.get("protectedRangeId")
+                        logger.info(f"Existing protection found. Using protectedRangeId: {self._protected_range_id}")
+                        break
+
+            if not getattr(self, "_protected_range_id", None):
+                logger.error("No existing protection ID found for this sheet.")
+                raise e  # Re-raise si no se pudo recuperar el ID
+
+        except (KeyError, IndexError) as e:
             logger.warning("Could not retrieve protectedRangeId from response. Unprotect may require metadata fetch.")
 
 
