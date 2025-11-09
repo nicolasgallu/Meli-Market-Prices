@@ -1,6 +1,7 @@
 from oauth2client.service_account import ServiceAccountCredentials
 from proyect.utils.logger import logger
 import gspread
+from gspread.exceptions import APIError
 
 class SheetProtector:
     """
@@ -29,7 +30,7 @@ class SheetProtector:
         """
         logger.info(f"Applying protection to the '{self.sheet_name}' sheet...")
 
-        service_account_email = self.service_account['client_email']
+        service_account_email = self.service_account["client_email"]
 
         body = {
             "requests": [
@@ -52,28 +53,37 @@ class SheetProtector:
             self._protected_range_id = protected_range["protectedRangeId"]
             logger.info(f"Protection applied. Stored protectedRangeId: {self._protected_range_id}")
 
-        except Exception as e:
-            # Caso: ya está protegido o permiso insuficiente
-            logger.warning(f"Protection may already exist: {e}")
+        except APIError as e:
+            # Verificamos si el error indica protección existente
+            if "already has sheet protection" in str(e):
+                logger.warning(f"Protection may already exist: {e}")
 
-            # Recuperamos los rangos protegidos actuales
-            sheet_metadata = self.spreadsheet.get()
-            protections = sheet_metadata.get("sheets", [])[0].get("protectedRanges", [])
+                # Recuperamos los rangos protegidos actuales del spreadsheet
+                sheet_metadata = self.spreadsheet.fetch_sheet_metadata()
+                protections = (sheet_metadata.get("sheets", [])[0].get("protectedRanges", []))
 
-            if protections:
-                # Buscar el primero que coincida con nuestro sheetId
                 for pr in protections:
                     if pr.get("range", {}).get("sheetId") == self.sheet.id:
                         self._protected_range_id = pr.get("protectedRangeId")
-                        logger.info(f"Existing protection found. Using protectedRangeId: {self._protected_range_id}")
+                        logger.info(
+                            f"Existing protection found. Using protectedRangeId: {self._protected_range_id}"
+                        )
                         break
 
-            if not getattr(self, "_protected_range_id", None):
-                logger.error("No existing protection ID found for this sheet.")
-                raise e  # Re-raise si no se pudo recuperar el ID
+                if not getattr(self, "_protected_range_id", None):
+                    logger.error("No existing protection ID found for this sheet.")
+                    raise e  # solo relanza si no encontró el ID
 
-        except (KeyError, IndexError) as e:
-            logger.warning("Could not retrieve protectedRangeId from response. Unprotect may require metadata fetch.")
+            else:
+                # Otros errores de API que no tienen que ver con duplicación
+                logger.error(f"Unhandled APIError during protection: {e}")
+                raise e
+
+        except (KeyError, IndexError):
+            logger.warning(
+                "Could not retrieve protectedRangeId from response. Unprotect may require metadata fetch."
+            )
+
 
 
     def unprotect(self):
